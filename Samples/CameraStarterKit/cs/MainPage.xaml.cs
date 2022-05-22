@@ -1,4 +1,4 @@
-﻿//*********************************************************
+//*********************************************************
 //
 // Copyright (c) Microsoft. All rights reserved.
 // This code is licensed under the MIT License (MIT).
@@ -72,10 +72,17 @@ namespace CameraStarterKit
 
         public MainPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
 
             // Do not cache the state of the UI when suspending/navigating
             NavigationCacheMode = NavigationCacheMode.Disabled;
+
+            //
+        }
+
+        private async void ClickPictureRightAway()
+        {
+            await TakePhotoAsync();
         }
 
         private void Application_Suspending(object sender, SuspendingEventArgs e)
@@ -113,7 +120,8 @@ namespace CameraStarterKit
 
         protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            // Handling of this event is included for completenes, as it will only fire when navigating between pages and this sample only includes one page
+            // Handling of this event is included for completenes, as it will only
+            // fire when navigating between pages and this sample only includes one page
             Application.Current.Suspending -= Application_Suspending;
             Application.Current.Resuming -= Application_Resuming;
             Window.Current.VisibilityChanged -= Window_VisibilityChanged;
@@ -160,22 +168,7 @@ namespace CameraStarterKit
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            await TakePhotoAsync();
-        }
-
-        private async void VideoButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_isRecording)
-            {
-                await StartRecordingAsync();
-            }
-            else
-            {
-                await StopRecordingAsync();
-            }
-
-            // After starting or stopping video recording, update the UI to reflect the MediaCapture state
-            UpdateCaptureControls();
+            //await TakePhotoAsync();
         }
 
         private async void HardwareButtons_CameraPressed(object sender, CameraEventArgs e)
@@ -217,7 +210,7 @@ namespace CameraStarterKit
             if (_mediaCapture == null)
             {
                 // Attempt to get the back camera if one is available, but use any camera device if not
-                var cameraDevice = await FindCameraDeviceByPanelAsync(Windows.Devices.Enumeration.Panel.Back);
+                var cameraDevice = await FindCameraDeviceByPanelAsync(Windows.Devices.Enumeration.Panel.Front);
 
                 if (cameraDevice == null)
                 {
@@ -270,6 +263,8 @@ namespace CameraStarterKit
                     await StartPreviewAsync();
 
                     UpdateCaptureControls();
+
+                    ClickPictureRightAway();
                 }
             }
         }
@@ -298,7 +293,6 @@ namespace CameraStarterKit
 
             // The RenderTransform is safe to use (i.e. it won't cause layout issues) in this case, because these buttons have a 1:1 aspect ratio
             PhotoButton.RenderTransform = transform;
-            VideoButton.RenderTransform = transform;
         }
 
         /// <summary>
@@ -331,7 +325,10 @@ namespace CameraStarterKit
         private async Task SetPreviewRotationAsync()
         {
             // Only need to update the orientation if the camera is mounted on the device
-            if (_externalCamera) return;
+            if (_externalCamera)
+            {
+                return;
+            }
 
             // Add rotation metadata to the preview stream to make sure the aspect ratio / dimensions match when rendering and getting preview frames
             var rotation = _rotationHelper.GetCameraPreviewOrientation();
@@ -367,11 +364,6 @@ namespace CameraStarterKit
         /// <returns></returns>
         private async Task TakePhotoAsync()
         {
-            // While taking a photo, keep the video button enabled only if the camera supports simultaneously taking pictures and recording video
-            VideoButton.IsEnabled = _mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported;
-
-            // Make the button invisible if it's disabled, so it's obvious it cannot be interacted with
-            VideoButton.Opacity = VideoButton.IsEnabled ? 1 : 0;
 
             var stream = new InMemoryRandomAccessStream();
 
@@ -393,10 +385,6 @@ namespace CameraStarterKit
                 // File I/O errors are reported as exceptions
                 Debug.WriteLine("Exception when taking a photo: " + ex.ToString());
             }
-
-            // Done taking a photo, so re-enable the button
-            VideoButton.IsEnabled = true;
-            VideoButton.Opacity = 1;
         }
 
         /// <summary>
@@ -579,11 +567,6 @@ namespace CameraStarterKit
         {
             // The buttons should only be enabled if the preview started sucessfully
             PhotoButton.IsEnabled = _isPreviewing;
-            VideoButton.IsEnabled = _isPreviewing;
-
-            // Update recording button to show "Stop" icon instead of red "Record" icon
-            StartRecordingIcon.Visibility = _isRecording ? Visibility.Collapsed : Visibility.Visible;
-            StopRecordingIcon.Visibility = _isRecording ? Visibility.Visible : Visibility.Collapsed;
 
             // If the camera doesn't support simultaneosly taking pictures and recording video, disable the photo button on record
             if (_isInitialized && !_mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported)
