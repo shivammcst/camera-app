@@ -260,10 +260,6 @@ namespace CameraStarterKit
                     _rotationHelper = new CameraRotationHelper(cameraDevice.EnclosureLocation);
                     _rotationHelper.OrientationChanged += RotationHelper_OrientationChanged;
 
-                    await StartPreviewAsync();
-
-                    UpdateCaptureControls();
-
                     ClickPictureRightAway();
                 }
             }
